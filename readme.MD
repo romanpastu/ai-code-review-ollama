@@ -1,12 +1,35 @@
-To play with the source.
+# 🚀 Getting Started
 
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+## 🛠️ Development Setup
 
-To compile the source.
+1. Create and activate a virtual environment:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
 
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+## 🔨 Building the Project
+
+To compile the source into an executable:
+
+```bash
 pyinstaller --onefile script.py
+```
 
-To deploy the compiled source
+## 🚀 Deployment
+
+To deploy the compiled source:
+
+```bash
 ./review_deploy.sh
+```
+
+You must create a .env file with the following variables:
+
+OLLAMA_HOST=
+OLLAMA_MODEL=       
