@@ -1,0 +1,4 @@
+.env
+venv/
+script.py
+script.spec
