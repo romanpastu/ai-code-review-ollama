@@ -1,3 +1,5 @@
+Script to code review a branch with Ollama comparing it to the main branch.
+
 # 🚀 Getting Started
 
 ## 🛠️ Development Setup
@@ -34,4 +36,12 @@ You must create a .env file with the following variables:
 ```
 OLLAMA_HOST=
 OLLAMA_MODEL=       
+```
+
+Usage
+
+After running the deploy script, you can run the script with the following command in any directory:
+
+```bash
+review
 ```
