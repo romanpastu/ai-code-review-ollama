@@ -31,5 +31,7 @@ To deploy the compiled source:
 
 You must create a .env file with the following variables:
 
+```
 OLLAMA_HOST=
 OLLAMA_MODEL=       
+```
