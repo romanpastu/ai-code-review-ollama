@@ -6,6 +6,27 @@
 SCRIPT_NAME="script.py"
 EXECUTABLE_NAME="review"
 DESTINATION="/usr/local/bin"
+MODE="http"  # Default mode
+
+# Parse command line arguments
+while getopts "m:" opt; do
+  case $opt in
+    m)
+      MODE="$OPTARG"
+      if [[ "$MODE" != "ssh" && "$MODE" != "http" ]]; then
+        echo "Invalid mode. Use 'ssh' or 'http'"
+        exit 1
+      fi
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+  esac
+done
+
+# Create a temporary config file that will be bundled
+echo "MODE=$MODE" > config.txt
 
 # Check if pyinstaller is installed
 if ! command -v pyinstaller &> /dev/null; then
@@ -14,8 +35,9 @@ if ! command -v pyinstaller &> /dev/null; then
 fi
 
 # Step 1: Compile the Python script into an executable
-echo "Compiling the script with PyInstaller..."
-pyinstaller --onefile --name "$EXECUTABLE_NAME" "$SCRIPT_NAME"
+echo "Compiling the script with PyInstaller in $MODE mode..."
+echo "Copying .env file and config to dist directory..."
+pyinstaller --onefile --name "$EXECUTABLE_NAME" --add-data ".env:." --add-data "config.txt:." "$SCRIPT_NAME"
 
 # Step 2: Check if the compilation succeeded
 if [ ! -f "dist/$EXECUTABLE_NAME" ]; then
