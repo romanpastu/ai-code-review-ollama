@@ -115,8 +115,8 @@ def process_with_ollama(diff_output):
     )
 
     print("Sending prompt to Ollama...")
-    print(f"Full prompt being sent:")
-    print(combined_prompt)
+    #print(f"Full prompt being sent:")
+    #print(combined_prompt)
 
     try:
         response = requests.post(
