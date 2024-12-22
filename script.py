@@ -63,25 +63,43 @@ def get_current_branch(repo):
     return repo.active_branch.name
 
 def compare_branches(repo, branch1, branch2):
-    """Get the diff between two branches as a unified diff."""
-    diff_command = f"git diff {branch1}..{branch2}"
+    """Get the diff between two branches as a dictionary of file paths and their diffs."""
+    # Get list of changed files
+    diff_command = f"git diff --name-only {branch1}..{branch2}"
     result = subprocess.run(diff_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if result.stderr:
-        print("Error generating git diff:", result.stderr)
-    return result.stdout
+        print("Error getting changed files:", result.stderr)
+        return {}
+    
+    changed_files = result.stdout.strip().split('\n')
+    if not changed_files or (len(changed_files) == 1 and not changed_files[0]):
+        return {}
+    
+    # Get diff for each file
+    file_diffs = {}
+    for file in changed_files:
+        diff_command = f"git diff {branch1}..{branch2} -- {file}"
+        result = subprocess.run(diff_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if result.stderr:
+            print(f"Error generating git diff for {file}:", result.stderr)
+        else:
+            file_diffs[file] = result.stdout
+    
+    return file_diffs
 
-def process_with_ollama(diff_output):
+def process_with_ollama(diff_output, filename=None):
     """
-    Process the git diff with Ollama using its HTTP API.
+    Process a single file's git diff with Ollama using its HTTP API.
     """
     import requests
     import json
 
-    print(f"Diff output length: {len(diff_output)}")
+    file_context = f"File: {filename}\n" if filename else ""
+    print(f"Processing diff for {filename} (length: {len(diff_output)})")
     
     # Combine the system instruction with the diff output
     combined_prompt = (
-        "2Your ONLY purpose is to analyze Git diff output for issues. You are a strict issue detector that CANNOT provide any other type of response.\n\n"
+        "Your ONLY purpose is to analyze Git diff output for issues. You are a strict issue detector that CANNOT provide any other type of response.\n\n"
         
         "YOU MUST ONLY OUTPUT IN THIS FORMAT:\n"
         "1. Issue: [One line description]\n"
@@ -110,13 +128,12 @@ def process_with_ollama(diff_output):
         "❌ Any markdown formatting\n"
         "❌ Any high-level analysis\n\n"
         
+        f"{file_context}"
         "Here is the git diff to analyze:\n"
         f"{diff_output}"
     )
 
-    print("Sending prompt to Ollama...")
-    #print(f"Full prompt being sent:")
-    #print(combined_prompt)
+    print(f"Sending prompt to Ollama for {filename}...")
 
     try:
         response = requests.post(
@@ -128,14 +145,12 @@ def process_with_ollama(diff_output):
             },
             timeout=360
         )
-        
 
         if response.status_code != 200:
             print(f"Error response body: {response.text}")
             return ""
 
         result = response.json()
-        
         return result.get('response', '').strip()
         
     except requests.exceptions.Timeout:
@@ -222,20 +237,30 @@ def main():
         print(f"You are already on the {main_branch} branch.")
         return
 
-    # Step 3: Get the diff between the main branch and the current branch
+    # Step 3: Get the diff between the main branch and the current branch for each file
     print(f"Comparing {current_branch} with {main_branch}...")
-    diff_output = compare_branches(repo, main_branch, current_branch)
+    file_diffs = compare_branches(repo, main_branch, current_branch)
 
-    if not diff_output:
+    if not file_diffs:
         print("No differences found.")
         return
 
-    # Step 4: Process the diff with Ollama
-    ollama_output = process_with_ollama(diff_output)
+    # Step 4: Process each file's diff with Ollama and collect results
+    print("\nAnalyzing changes in each file:")
+    all_results = []
+    
+    for filename, diff in file_diffs.items():
+        print(f"\nAnalyzing {filename}...")
+        result = process_with_ollama(diff, filename)
+        if result and result.strip() != "No issues found":
+            all_results.append(f"\nFile: {filename}\n{result}")
 
-    # Step 5: Print the analysis result
-    print("Ollama Analysis Reported:")
-    print(ollama_output)
+    # Step 5: Print the combined analysis results
+    print("\nOllama Analysis Report:")
+    if all_results:
+        print("\n".join(all_results))
+    else:
+        print("No issues found in any of the changed files.")
 
 if __name__ == "__main__":
     main()
