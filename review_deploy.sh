@@ -36,7 +36,6 @@ fi
 
 # Step 1: Compile the Python script into an executable
 echo "Compiling the script with PyInstaller in $MODE mode..."
-echo "Copying .env file and config to dist directory..."
 pyinstaller --onefile --name "$EXECUTABLE_NAME" --add-data ".env:." --add-data "config.txt:." "$SCRIPT_NAME"
 
 # Step 2: Check if the compilation succeeded
@@ -51,7 +50,7 @@ sudo mv "dist/$EXECUTABLE_NAME" "$DESTINATION"
 
 # Step 4: Clean up build artifacts
 echo "Cleaning up build artifacts..."
-rm -rf build dist "$EXECUTABLE_NAME.spec"
+rm -rf build dist "$EXECUTABLE_NAME.spec" config.txt
 
 # Step 5: Verify the executable works
 echo "Verifying the new executable..."
